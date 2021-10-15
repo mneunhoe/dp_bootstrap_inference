@@ -86,13 +86,18 @@ for (i in 1:n_outer_loop) {
 
 
 # Get percentile confidence intervals from bootstrapping distributions
+# sapply loops over the list of distributions and computes the empirical quantiles
+# t transposes the output
 dp_boot_cis <- t(sapply(bootstrap_dists, function(x) quantile(x, c(0.025, 0.975))))
 
 
 # Generate a plot of the confidence intervals
+pdf(file = "../figures/ci_plot.pdf", 
+    height = 11,
+    width = 8.5)
 par(mfrow = c(1, 1))
 plot_cis(dp_boot_cis, true_pop_mean = 1.5, xlim = c(0, 3))
-
+dev.off()
 # Compare the standard deviation of p^hat, p^tilde and p^hattilde
 
 # SD of p^hat
@@ -107,7 +112,9 @@ mean(sapply(bootstrap_dists, sd))
 
 # Ridge plot of bootstrap distributions
 
-
+pdf("../figures/ridge_plot.pdf", 
+    height = 11,
+    width = 8.5)
 par(mfrow = c(1, 1))
 plot(
   1,
@@ -135,7 +142,7 @@ true_den <- density(dp_betas_hat)
 true_den$y <- true_den$y + (2 * i)
 
 lines(true_den, col = viridis::viridis(3, 0.7)[2])
-
+dev.off()
 
 # Question: Smaple size?
 # Effect of sample size? (up for noisy, down for p_hat)
