@@ -23,7 +23,7 @@ p_x <- 0.8
 n_data <- 2000
 
 # Set rho parameter
-rho <- 0.000337869
+rho <- 0.00337869
 #rho <- 1
 # Check achieved privacy in terms of delta and epsilon
 delta <- 1 / (2 * n_data)
@@ -66,7 +66,18 @@ loglik <- function(theta, X, y, counts) {
 ll_fct <- function(counts, dp = F){
   
   if(dp){
-    tmp_counts <- counts + gaussian_mech_zCDP_vec(counts, 1, rho/length(counts))
+    
+    tmp_counts <- c(counts[3]+counts[4], counts[2]+counts[4])
+    
+    tmp_counts <-  tmp_counts + gaussian_mech_zCDP_vec(tmp_counts, 1, rho/length(tmp_counts))
+    
+    dp_data <- data.frame(y = rbinom(n_data, 1, tmp_counts[1]/n_data), x = rbinom(n_data, 1, tmp_counts[2]/n_data))
+    
+    tmp_counts <-  table(apply(dp_data, 1, function(x)
+      paste(x, collapse = " ")))
+    
+    
+    #tmp_counts <- counts + gaussian_mech_zCDP_vec(counts, 1, rho/length(counts))
     
     if (any(tmp_counts < 0)) {
       tmp_counts <- tmp_counts + abs(min(tmp_counts[tmp_counts < 0]))
@@ -109,7 +120,14 @@ for(i in 1:100){
   
   boot_dists[[i]] <- boot_dist
   
-  dp_counts <- counts + gaussian_mech_zCDP_vec(counts, 1, rho/length(counts))
+  
+  
+  dp_counts <- colSums(orig_data) + gaussian_mech_zCDP_vec(colSums(orig_data), 1, rho/length(colSums(orig_data)))
+  
+  dp_data <- data.frame(y = rbinom(n_data, 1, dp_counts[1]/n_data), x = rbinom(n_data, 1, dp_counts[2]/n_data))
+  
+  dp_counts <-  table(apply(dp_data, 1, function(x)
+    paste(x, collapse = " ")))
   
   dp_boot_dist <- foreach(
     i = 1:B,

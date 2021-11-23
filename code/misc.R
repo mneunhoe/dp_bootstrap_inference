@@ -231,23 +231,23 @@ y <- orig_data$y
 
 loglik <- function(theta, X, y, counts) {
   
-
-
-y_hat <- logit_link(cbind(1,X)%*%theta)
-
-y_hat0 <- logit_link(cbind(1, 0)%*%theta)
-y_hat1 <- logit_link(cbind(1, 1)%*%theta)
-
-# Negative Loglikelihood from histogram
-if(!is.null(counts)){
-ll <- as.numeric(-1/sum(counts)*(counts[3]*log(y_hat0) + counts[1]*log(1-y_hat0) + counts[4]*log(y_hat1) + counts[2]*log(1-y_hat1)))
-} else {
-ll <- -mean(log(y_hat * y + (1 - y_hat) * (1 - y)))
-}
-#ll <- -prod(((y_hat^ y) * ((1 - y_hat) ^ (1 - y))))
-
-#ll <- -log(sum(y_hat * y + (1 - y_hat) * (1 - y)))
-return(ll)
+  
+  
+  y_hat <- logit_link(cbind(1,X)%*%theta)
+  
+  y_hat0 <- logit_link(cbind(1, 0)%*%theta)
+  y_hat1 <- logit_link(cbind(1, 1)%*%theta)
+  
+  # Negative Loglikelihood from histogram
+  if(!is.null(counts)){
+    ll <- as.numeric(-1/sum(counts)*(counts[3]*log(y_hat0) + counts[1]*log(1-y_hat0) + counts[4]*log(y_hat1) + counts[2]*log(1-y_hat1)))
+  } else {
+    ll <- -mean(log(y_hat * y + (1 - y_hat) * (1 - y)))
+  }
+  #ll <- -prod(((y_hat^ y) * ((1 - y_hat) ^ (1 - y))))
+  
+  #ll <- -log(sum(y_hat * y + (1 - y_hat) * (1 - y)))
+  return(ll)
   
 }
 
