@@ -1,15 +1,23 @@
 source("06_cdf_functions.R")
 set.seed(100)
 
+epsilon_settings <- c(0.1, 0.5, 1, 10, Inf)
+granularity_settings <- c(0.1, 0.01, 0.005)
+bound_settings <- c(4, 5)
+n_settings <- c(100, 500, 1000)
+settings <- expand.grid(epsilon_settings, granularity_settings, bound_settings, n_settings)
+
+
+for(setting in 1:nrow(settings)){
 # Set number of data points
-n_data <- 1000
+n_data <- settings[setting, 4]
 
 # Set hyperparameters for dp cdf
-upper_bound <- 4
-lower_bound <- -4
-granularity <- 0.005
+upper_bound <- settings[setting, 3]
+lower_bound <- -settings[setting, 3]
+granularity <- settings[setting, 2]
 cdp <- TRUE
-epsilon <- 10
+epsilon <- settings[setting, 1]
 
 # Number of bootstrap repetitions
 
@@ -25,11 +33,15 @@ res_list <- vector("list", n_rep)
 for(rep in 1:n_rep){
 x <- rnorm(n_data)
 
+if(epsilon == Inf) {
+  lower_bound <- min(x)
+  upper_bound <- max(x)
+}
 
 res <- dpCDF(x, lower_bound, upper_bound, epsilon, granularity, cdp, num_trials = 1)
 
 # True CDF for standard normal data
-if(rep == 1) cu <- curve(pnorm, -4, 4, n = length(res[[1]][[1]]), add = T, col = viridis::viridis(2)[2])
+if(rep == 1) cu <- curve(pnorm, lower_bound, lower_bound, n = length(res[[1]][[1]]), add = T, col = "black")
 #par(mfrow = c(2, 2))
 # plot(res[[1]][[2]], res[[1]][[1]], type = "n", ylab = "Cumulative Probability", xlab = "x", bty = "n", las = 1, main = paste0("Epsilon: ", epsilon))
 # lapply(res, function(x) lines(x[[2]], x[[1]], col = viridis::viridis(3, 1)[1]))
@@ -83,7 +95,15 @@ res_list[[rep]] <- list(coverage_points, coverage_sim, coverage_sim_adj)
 cat("Repetition: ", rep, "\n")
 }
 
-saveRDS(res_list, paste0("../results/", n_data, "_", epsilon,"_",granularity, ".RDS"))
+saveRDS(res_list, paste0("../results/", n_data, "_", epsilon,"_",granularity, "_",upper_bound, ".RDS"))
+}
+
+n_data <- 1000
+epsilon <- 0.5
+granularity <- 0.005
+upper_bound <- 5
+res_list <- readRDS( paste0("../results/", n_data, "_", epsilon,"_",granularity, "_",upper_bound, ".RDS"))
+
 
 mean(sapply(res_list, function(x) (x[[1]])), na.rm = T)
 mean(sapply(res_list, function(x) (x[[2]])))
@@ -167,3 +187,7 @@ list(list(1000, c(-4, 4)), lapply(bins, function(b) dpHistogram(x, 1000, -4, 4, 
 
 breaks <- seq(lower_bound, upper_bound, length.out = bins+1)
 true_hist <- .Call(graphics:::C_BinCount, x, breaks, T, T)
+
+
+
+
