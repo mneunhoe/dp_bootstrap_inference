@@ -41,7 +41,7 @@ if(epsilon == Inf) {
 res <- dpCDF(x, lower_bound, upper_bound, epsilon, granularity, cdp, num_trials = 1)
 
 # True CDF for standard normal data
-if(rep == 1) cu <- curve(pnorm, lower_bound, lower_bound, n = length(res[[1]][[1]]), add = T, col = "black")
+if(rep == 1) cu <- curve(pnorm, lower_bound, upper_bound, n = length(res[[1]][[1]]), add = T, col = "black")
 #par(mfrow = c(2, 2))
 # plot(res[[1]][[2]], res[[1]][[1]], type = "n", ylab = "Cumulative Probability", xlab = "x", bty = "n", las = 1, main = paste0("Epsilon: ", epsilon))
 # lapply(res, function(x) lines(x[[2]], x[[1]], col = viridis::viridis(3, 1)[1]))
