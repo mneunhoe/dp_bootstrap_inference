@@ -65,17 +65,18 @@ dmixnorm <- function(x,
   
 }
 
-
+# Make sure it's the same discretization as for the input
 cdf_bootstrap <-
   function(cdf,
            B = 1000,
+           n_data,
            lower_bound,
            upper_bound,
            epsilon,
            granularity,
            cdp,
            projection_step = T) {
-    probs <- c(0, diff(cdf[[1]]))
+    probs <- c(cdf[[1]][1], diff(cdf[[1]]))
     
     
     boot_dist <- vector("list", B)
@@ -109,6 +110,20 @@ cdf_bootstrap <-
 
 
 
+# minimize F(X) >= q
+
+get_quantile <- function(cdf, q, cdf_x = NULL, cdf_y = NULL) {
+  
+  if(is.null(cdf_x) & is.null(cdf_y)){
+  cdf_x <- cdf[[2]]
+  cdf_y <- cdf[[1]]
+  }
+  
+  min(cdf_x[cdf_y >= q])
+}
+
+
+
 # Parameters for mixture distribution
 
 weights <- c(0.5, 0.5)
@@ -129,42 +144,48 @@ res_priv_sampling_dist <- NULL
 boot_res <- list()
 
 # Settings for loop
-projection_step <- T
-bootstrap <- T
+projection_step <- TRUE
+bootstrap <- TRUE
 
 # Experiment Loop
 
 for (i in 1:10) {
   
   # Sample new P_hat
-  samp <- rmixnorm(weights = c(0.5, 0.5))
+  samp <- rmixnorm(n = n_data, weights = weights, component_means = comp_means, component_sds = comp_sds)
   
   # Discretize
   discretized_cdf <-
     dpCDF(
       samp,
-      lower_bound,
-      upper_bound,
+      lower_bound = lower_bound,
+      upper_bound = upper_bound,
       epsilon = Inf,
-      granularity = 0.01,
-      cdp,
+      granularity = granularity,
+      cdp = cdp,
       num_trials = 1
     )
   
+
+  
+  
+  
+  
+  
+  # return quantile
   
   res_sampling_dist <-
-    c(res_sampling_dist, discretized_cdf[[1]][[2]][which.min(abs(discretized_cdf[[1]][[1]] -
-                                                                   q))] - true_theta)
+    c(res_sampling_dist, get_quantile(discretized_cdf[[1]], q) - true_theta)
   
   # Generate dp cdf
-  res <-
+  private_cdf <-
     dpCDF(
       samp,
       lower_bound,
       upper_bound,
       epsilon = epsilon,
       granularity = granularity,
-      cdp,
+      cdp = cdp,
       num_trials = 1
     )
   
@@ -172,12 +193,15 @@ for (i in 1:10) {
   # lapply(res, function(x) lines(x[[2]], x[[1]], col = viridis::viridis(3, 1)[2]))
   
   if (projection_step) {
-    pava <- isotone::gpava(res[[1]][[2]], res[[1]][[1]])
+    pava <- isotone::gpava(private_cdf[[1]][[2]], private_cdf[[1]][[1]])
     res[[1]][[1]] <- pava$x
   }
   
   
-  theta_hat <-  res[[1]][[2]][which.min(abs(res[[1]][[1]] - q))]
+  
+  
+  theta_hat <-  get_quantile(private_cdf[[1]], q)
+  
   res_priv_sampling_dist <-
     c(res_priv_sampling_dist, theta_hat - true_theta)
   
@@ -186,19 +210,19 @@ for (i in 1:10) {
     boot_dist <-
       cdf_bootstrap(
         res[[1]],
+        
         lower_bound = lower_bound,
         upper_bound = upper_bound,
         epsilon = epsilon,
         granularity = granularity,
-        cdp = T,
+        cdp = cdp,
         projection_step = projection_step
       )
     
     
     
     boot_res[[i]] <-
-      sapply(boot_dist, function(x)
-        res[[1]][[2]][which.min(abs(x - q))] - theta_hat)
+      sapply(boot_dist, function(x) get_quantile(q = q, cdf_x = private_cdf[[1]][[2]], cdf_y = x) - theta_hat)
   }
   
   
