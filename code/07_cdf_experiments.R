@@ -98,10 +98,10 @@ cat("Repetition: ", rep, "\n")
 saveRDS(res_list, paste0("../results/", n_data, "_", epsilon,"_",granularity, "_",upper_bound, ".RDS"))
 }
 
-n_data <- 1000
+n_data <- 100
 epsilon <- 0.5
 granularity <- 0.005
-upper_bound <- 5
+upper_bound <- 4
 res_list <- readRDS( paste0("../results/", n_data, "_", epsilon,"_",granularity, "_",upper_bound, ".RDS"))
 
 
