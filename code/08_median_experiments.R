@@ -6,7 +6,11 @@ set.seed(100)
 # Set number of data points
 n_data <- 1000
 
-# Set hyperparameters for dp cdf
+# Number of bootstrap repetitions
+
+B <- 1000
+
+# Set hyperparameters for dp cdf and discretized cdf
 upper_bound <- 4
 lower_bound <- -4
 granularity <- 0.01
@@ -75,7 +79,7 @@ cdf_bootstrap <-
            epsilon,
            granularity,
            cdp,
-           projection_step = T) {
+           projection_step = TRUE) {
     probs <- c(cdf[[1]][1], diff(cdf[[1]]))
     
     
@@ -145,11 +149,13 @@ boot_res <- list()
 
 # Settings for loop
 projection_step <- TRUE
-bootstrap <- TRUE
+bootstrap <- FALSE
 
 # Experiment Loop
 
-for (i in 1:10) {
+n_rep <- 1000
+
+for (i in 1:n_rep) {
   
   # Sample new P_hat
   samp <- rmixnorm(n = n_data, weights = weights, component_means = comp_means, component_sds = comp_sds)
@@ -194,7 +200,7 @@ for (i in 1:10) {
   
   if (projection_step) {
     pava <- isotone::gpava(private_cdf[[1]][[2]], private_cdf[[1]][[1]])
-    res[[1]][[1]] <- pava$x
+    private_cdf[[1]][[1]] <- pava$x
   }
   
   
@@ -209,8 +215,9 @@ for (i in 1:10) {
   if (bootstrap) {
     boot_dist <-
       cdf_bootstrap(
-        res[[1]],
-        
+        cdf = private_cdf[[1]],
+        n_data = n_data,
+        B = B,
         lower_bound = lower_bound,
         upper_bound = upper_bound,
         epsilon = epsilon,
@@ -248,6 +255,7 @@ hist(
 )
 
 par(mfrow = c(3, 4))
+
 lapply(boot_res, function(x)
   hist(x, xlim = c(-4, 4)))
 
