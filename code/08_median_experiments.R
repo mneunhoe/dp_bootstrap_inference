@@ -132,7 +132,7 @@ get_quantile <- function(cdf, q, cdf_x = NULL, cdf_y = NULL) {
 
 weights <- c(0.5, 0.5)
 comp_means <- c(-2, 2)
-comp_sds <- c(1, 1)
+comp_sds <- c(0.5, 0.5)
 
 
 # Quantity of interest
@@ -149,11 +149,11 @@ boot_res <- list()
 
 # Settings for loop
 projection_step <- TRUE
-bootstrap <- FALSE
+bootstrap <- TRUE
 
 # Experiment Loop
 
-n_rep <- 1000
+n_rep <- 10
 
 for (i in 1:n_rep) {
   
@@ -194,6 +194,9 @@ for (i in 1:n_rep) {
       cdp = cdp,
       num_trials = 1
     )
+  
+  
+                        
   
   # plot(res[[1]][[2]], res[[1]][[1]], type = "n", ylab = "Cumulative Probability", xlab = "x", bty = "n", las = 1, main = paste0("Epsilon: ", epsilon))
   # lapply(res, function(x) lines(x[[2]], x[[1]], col = viridis::viridis(3, 1)[2]))
@@ -236,9 +239,10 @@ for (i in 1:n_rep) {
   cat(i, "\n")
 }
 
-
 # Look at results
 par(mfrow = c(1, 2))
+
+
 hist(
   res_sampling_dist,
   xlim = c(-4, 4),
