@@ -36,7 +36,7 @@ Ps <- list(
 )
 
 
-n_rep <- 2
+n_rep <- 100
 res_P <- vector("list", length(Ps))
 names(res_P) <- names(Ps)
 
@@ -56,7 +56,7 @@ for (dataset in names(Ps)) {
       ci_list[[i]] <- dp_ci(
         P_hat,
         epsilon = epsilon,
-        B = 100,
+        B = 1000,
         lower_bound = Ps[[dataset]]$settings[1],
         upper_bound = Ps[[dataset]]$settings[2],
         granularity = Ps[[dataset]]$settings[3]
