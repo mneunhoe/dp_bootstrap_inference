@@ -73,8 +73,19 @@ plot(density(adult_age_full, from = 18, to = 99), las = 1, bty = "n", main = "Ad
 
 (Further potential real data sets: Census (ACS and/or decennial)) PUMS data from IPUMS, Census business data)
 
-*Parameters.* In our algorithm we have several parameters that influence the results. Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (1000, increase for a couple of settings). Furthermore the lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
+*Parameters.* In our algorithm we have several parameters that influence the results.
+
+* Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (1000, increase for a couple of settings).
+
+* Data range and grid: The lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
 For the adult data we set the lower bound to $18$ and the upper bound to $99$ with a granularity of $0.1$. (Other sets, how to choose them?)
+
+
+    * Future versions: allow a user-set range and discretization grd.
+
+    * Think about how to make discretization evident to user
+
+    * Check that code handles data ponts outside the range properly. 
 
 *Evaluation.* To understand the performance of our method we repeatedly (100 times) apply the method to fresh samples $\hat P$ from the population data $P$. For each sample $\hat P$ we produce confidence intervals and calculate the proportion of confidence intervals that cover the true population value (empirical coverage). Furthermore, we are interested in the length of the confidence intervals (shorter intervals with coverage close to the nominal coverage are better).
 
