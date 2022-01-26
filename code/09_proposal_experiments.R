@@ -68,7 +68,9 @@ for (dataset in names(Ps)) {
   res_P[[paste0(dataset)]] <- res_list
 }
 
-saveRDS(res_P, "../results/median_experiments.RDS")
+#saveRDS(res_P, "../results/median_experiments.RDS")
+
+res_P <- readRDS("../results/median_experiments.RDS")
 
 par(mfrow = c(1, 2))
 lapply(names(Ps), function(x) summarize_results(res_P[[x]], dataset = x, true_value = Ps[[x]]$true_value) )

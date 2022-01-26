@@ -23,7 +23,7 @@
   Boston, MA \\
   \texttt{\href{mailto:marceln@bu.edu}{\nolinkurl{marceln@bu.edu}}} \\
    \And
-    Adam D. Smith
+    Adam Smith
    \\
     Department of Computer Science \\
     Boston University \\
@@ -135,10 +135,127 @@ Enter the text of your abstract here.
 
 Here goes an introduction text
 
-\hypertarget{headings-first-level}{%
-\section{Headings: first level}\label{headings-first-level}}
+\hypertarget{our-proposed-method}{%
+\section{Our proposed method}\label{our-proposed-method}}
 
-\label{sec:headings}
+\label{sec:method}
+
+Instead of focusing on a single quantitiy of interest we produce
+synthetic data in the form of a private (discretized) cumulative
+distribution function (cdf). The private cdf is then used draw resamples
+and apply the same mechanism on each of the resamples. This step does
+not cost any additional privacy budget as it is post-processing the
+private cdf. We then use the resulting distribution of cdfs calculate
+confidence intervals for several statistics of interest (such as
+quantiles, e.g.~the median, the mean, the probability of observing a
+point in a particular region) and a confidence interval for the entire
+cdf.
+
+\hypertarget{related-work}{%
+\section{Related Work}\label{related-work}}
+
+\hypertarget{experiments}{%
+\section{Experiments}\label{experiments}}
+
+We evaluate the performance of our proposed method in a set of
+experiments. First, we are interested in the validity of the generated
+confidence intervals. Second, we evaluate how different settings of the
+parameters in the algorithm (\(\epsilon\), \(B\), bounds, granularity)
+affect the resulting confidence intervals. The results show that\ldots{}
+
+\emph{Datasets.} To understand the behavior of our method under
+different settings we look at several data sets. First, we look at data
+sets where we have full control over the data generating process:
+
+\begin{itemize}
+\item data drawn from a standard normal distribution $\mathcal{N}(0, 1)$.
+\item data drawn from a mixture of two normal distributions with equal weight $f(x) = \sum_{k=1}^K \lambda_k f_k(x)$, with $\lambda = (0.5, 0.5), f_1(x) = \mathcal{N}(-2, 0.25)$ and $f_2(x) = \mathcal{N}(2, 0.25)$. 
+\item (different weights, different means)
+\end{itemize}
+
+Furthermore, we show results on real data and use the adult data set
+from the UCI Machine Learning Repository (\cite{Dua2019}) that is
+derived from 1994 census data. In particular we look at the age
+variable.
+
+Figure \ref{fig:fig1} summarizes the data sets. From each of the data
+sets we draw samples \(\hat P\) of different sizes (50, 100, 500, 1000,
+5000), to understand the behavior of our method at different sample
+sizes.
+
+\begin{figure}
+\centering
+\includegraphics{dp_bootstrap_inference_files/figure-latex/fig1-1.pdf}
+\caption{Summary of the data sets}
+\end{figure}
+
+(Further potential real data sets: Census (ACS and/or decennial)) PUMS
+data from IPUMS, Census business data)
+
+\emph{Parameters.} In our algorithm we have several parameters that
+influence the results. Most importantly we vary the privacy budget
+\(\epsilon\) (0.1, 1, 10, Inf) and the number of bootstrap iterations
+\(B\) (100, 500, 1000). Furthermore the lower and upper bound of the cdf
+algorithm as well as the granularity parameter play an important role
+and poorly set may bias results. For the known data generating processes
+(normal, mixture) we set the lower bound to \(-4\) and the upper bound
+to \(4\) and the granularity parameter to \(0.01\). For the adult data
+we set the lower bound to \(18\) and the upper bound to \(99\) with a
+granularity of \(0.1\). (Other sets, how to choose them?)
+
+\emph{Evaluation.} To understand the performance of our method we
+repeatedly (100 times) apply the method to fresh samples \(\hat P\) from
+the population data \(P\). For each sample \(\hat P\) we produce
+confidence intervals and calculate the proportion of confidence
+intervals that cover the true population value (empirical coverage).
+Furthermore, we are interested in the length of the confidence intervals
+(shorter intervals with coverage close to the nominal coverage are
+better).
+
+In the case of samples from the known data generating process we can
+compare the resulting confidence intervals to the true population
+values. For the adult data set (and other real data sets) we consider
+the full data set as our ground truth and take simple random samples
+from it to evaluate our proposed method. We consider the statistic of
+interest calculated on the entire data set as our ground truth.
+
+\emph{Statistics of interest.} Median, mean, some percentile, entire cdf
+--\textgreater{} CI around it!
+
+\hypertarget{results}{%
+\section{Results}\label{results}}
+
+\begin{figure}
+\centering
+\includegraphics{dp_bootstrap_inference_files/figure-latex/fig2-1.pdf}
+\caption{Results for the normal distribution}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{dp_bootstrap_inference_files/figure-latex/fig3-1.pdf}
+\caption{Results for the mixture distribution}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{dp_bootstrap_inference_files/figure-latex/fig4-1.pdf}
+\caption{Results for the adult data}
+\end{figure}
+
+\hypertarget{notes}{%
+\section{Notes}\label{notes}}
+
+Different possibilities to get quantiles. So far we used the percentile
+method.
+
+The range and granularity need to be set properly (how?), otherwise
+truncation and (too coarse) discretization can bias results.
+
+\newpage
+
+\hypertarget{instructions}{%
+\section{Instructions}\label{instructions}}
 
 You can use directly LaTeX command or Markdown text.
 
@@ -212,7 +329,7 @@ of the first footnote.{]}
   \centering
   \fbox{\rule[-.5cm]{4cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
   \caption{Sample figure caption.}
-  \label{fig:fig1}
+  \label{fig:fig3}
 \end{figure}
 
 But you can also do that using R.
@@ -225,7 +342,7 @@ But you can also do that using R.
 
 \begin{figure}
 \centering
-\includegraphics{dp_bootstrap_inference_files/figure-latex/fig2-1.pdf}
+\includegraphics{dp_bootstrap_inference_files/figure-latex/fig5-1.pdf}
 \caption{Another sample figure}
 \end{figure}
 
