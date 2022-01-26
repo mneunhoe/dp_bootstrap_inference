@@ -46,7 +46,8 @@ We evaluate the performance of our proposed method in a set of experiments. Firs
 \begin{itemize}
 \item data drawn from a standard normal distribution $\mathcal{N}(0, 1)$.
 \item data drawn from a mixture of two normal distributions with equal weight $f(x) = \sum_{k=1}^K \lambda_k f_k(x)$, with $\lambda = (0.5, 0.5), f_1(x) = \mathcal{N}(-2, 0.25)$ and $f_2(x) = \mathcal{N}(2, 0.25)$. 
-\item (different weights, different means)
+\item (different weights, different means, $\frac{1}{3}, \frac{2}{3}$)
+\item lognormal distribution
 \end{itemize}
 
 Furthermore, we show results on real data and use the adult data set from the UCI Machine Learning Repository (\cite{Dua2019}) that is derived from 1994 census data. In particular we look at the age variable. 
@@ -72,16 +73,22 @@ plot(density(adult_age_full, from = 18, to = 99), las = 1, bty = "n", main = "Ad
 
 (Further potential real data sets: Census (ACS and/or decennial)) PUMS data from IPUMS, Census business data)
 
-*Parameters.* In our algorithm we have several parameters that influence the results. Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (100, 500, 1000). Furthermore the lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
+*Parameters.* In our algorithm we have several parameters that influence the results. Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (1000, increase for a couple of settings). Furthermore the lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
 For the adult data we set the lower bound to $18$ and the upper bound to $99$ with a granularity of $0.1$. (Other sets, how to choose them?)
 
 *Evaluation.* To understand the performance of our method we repeatedly (100 times) apply the method to fresh samples $\hat P$ from the population data $P$. For each sample $\hat P$ we produce confidence intervals and calculate the proportion of confidence intervals that cover the true population value (empirical coverage). Furthermore, we are interested in the length of the confidence intervals (shorter intervals with coverage close to the nominal coverage are better).
 
 In the case of samples from the known data generating process we can compare the resulting confidence intervals to the true population values. For the adult data set (and other real data sets) we consider the full data set as our ground truth and take simple random samples from it to evaluate our proposed method. We consider the statistic of interest calculated on the entire data set as our ground truth.
 
-*Statistics of interest.* Median, mean, some percentile, entire cdf --> CI around it!
+*Statistics of interest.* Median, mean, some percentile $\frac{1}{3}$, entire cdf --> CI around it!
 
 # Results
+
+(Ratio of length to non-private one, IQR of actual distribution)
+
+(Results to record. Bootstrap distributions, Profiling of code, Parallelization of code? )
+
+(Combinations of parameters, other methods to get CIs, explain that pivot doesn't work in some cases and show it. True value from discretized data.)
 
 ```{r echo = FALSE, results='hide'}
 source("../../code/06_cdf_functions.R")
