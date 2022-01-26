@@ -17,114 +17,10 @@ granularity <- 0.01
 cdp <- TRUE
 epsilon <- 1
 
-# Sample from mixture of normals
-rmixnorm <-
-  function(n = 1000,
-           weights = c(0.5, 0.5),
-           component_means = c(-2, 2),
-           component_sds = c(0.5, 0.5)) {
-    # Sample component ids based on component weights
-    component_id <-
-      sample(
-        1:length(weights),
-        size = n,
-        prob = weights,
-        replace = TRUE
-      )
-    
-    # Vectorized sampling from rnorm based on component id
-    samples <-
-      rnorm(n = n, mean = component_means[component_id], sd = component_sds[component_id])
-    
-    return(samples)
-    
-  }
-
-
-# Get analytical cdf from mixture of normals
-pmixnorm <- function(x,
-                     weights = c(0.5, 0.5),
-                     component_means = c(-2, 2),
-                     component_sds = c(0.5, 0.5)) {
-  q <- 0
-  for (i in 1:length(weights)) {
-    q <- q + weights[i] * pnorm(x, component_means[i], component_sds[i])
-  }
-  
-  return(q)
-  
-}
-
-# Get analytical density from mixture of normals
-dmixnorm <- function(x,
-                     weights = c(0.5, 0.5),
-                     component_means = c(-2, 2),
-                     component_sds = c(0.5, 0.5)) {
-  q <- 0
-  for (i in 1:length(weights)) {
-    q <- q + weights[i] * dnorm(x, component_means[i], component_sds[i])
-  }
-  
-  return(q)
-  
-}
-
-# Make sure it's the same discretization as for the input
-cdf_bootstrap <-
-  function(cdf,
-           B = 1000,
-           n_data,
-           lower_bound,
-           upper_bound,
-           epsilon,
-           granularity,
-           cdp,
-           projection_step = TRUE) {
-    probs <- c(cdf[[1]][1], diff(cdf[[1]]))
-    
-    
-    boot_dist <- vector("list", B)
-    
-    for (i in 1:B) {
-      samp_x <-   rmultinom(1, size = n_data, probs)
-      x_boot <- NULL
-      for (j in 1:length(probs)) {
-        x_boot <- c(x_boot, rep(cdf[[2]][j], samp_x[j]))
-        
-      }
-      boot_cdf <-
-        dpCDF(x_boot,
-              lower_bound,
-              upper_bound,
-              epsilon,
-              granularity,
-              cdp,
-              num_trials = 1)
-      
-      if (projection_step) {
-        boot_dist[[i]] <- isotone::gpava(boot_cdf[[1]][[2]], boot_cdf[[1]][[1]])$x
-      } else {
-        boot_dist[[i]] <- boot_cdf[[1]][[1]]
-      }
-      
-    }
-    
-    return(boot_dist)
-  }
 
 
 
-# minimize F(X) >= q
 
-get_quantile <- function(cdf, q, cdf_x = NULL, cdf_y = NULL) {
-  
-  if(is.null(cdf_x) & is.null(cdf_y)){
-  cdf_x <- cdf[[2]]
-  cdf_y <- cdf[[1]]
-  }
-  
-  min(cdf_x[cdf_y >= q])
-}
 
 
 
@@ -140,7 +36,7 @@ comp_sds <- c(0.5, 0.5)
 true_theta <- 0
 
 # Corresponding quantile
-q <- pmixnorm(true_theta)
+q <- pmixnorm(true_theta, weights = weights, component_means = comp_means, component_sds = comp_sds)
 
 # Set up empty objects to collect results
 res_sampling_dist <- NULL

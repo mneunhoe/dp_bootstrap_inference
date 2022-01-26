@@ -356,3 +356,217 @@ dpCDF <- function(x, lower_bound, upper_bound, epsilon, granularity, cdp = TRUE,
   return(results)
 }
 
+
+# Sample from mixture of normals
+rmixnorm <-
+  function(n = 1000,
+           weights = c(0.5, 0.5),
+           component_means = c(-2, 2),
+           component_sds = c(0.5, 0.5)) {
+    # Sample component ids based on component weights
+    component_id <-
+      sample(
+        1:length(weights),
+        size = n,
+        prob = weights,
+        replace = TRUE
+      )
+    
+    # Vectorized sampling from rnorm based on component id
+    samples <-
+      rnorm(n = n, mean = component_means[component_id], sd = component_sds[component_id])
+    
+    return(samples)
+    
+  }
+
+
+# Get analytical cdf from mixture of normals
+pmixnorm <- function(x,
+                     weights = c(0.5, 0.5),
+                     component_means = c(-2, 2),
+                     component_sds = c(0.5, 0.5)) {
+  q <- 0
+  for (i in 1:length(weights)) {
+    q <- q + weights[i] * pnorm(x, component_means[i], component_sds[i])
+  }
+  
+  return(q)
+  
+}
+
+# Get analytical density from mixture of normals
+dmixnorm <- function(x,
+                     weights = c(0.5, 0.5),
+                     component_means = c(-2, 2),
+                     component_sds = c(0.5, 0.5)) {
+  q <- 0
+  for (i in 1:length(weights)) {
+    q <- q + weights[i] * dnorm(x, component_means[i], component_sds[i])
+  }
+  
+  return(q)
+  
+}
+
+# Make sure it's the same discretization as for the input
+cdf_bootstrap <-
+  function(cdf,
+           B = 1000,
+           n_data,
+           lower_bound,
+           upper_bound,
+           epsilon,
+           granularity,
+           cdp,
+           projection_step = TRUE) {
+    probs <- c(cdf[[1]][1], diff(cdf[[1]]))
+    
+    
+    boot_dist <- vector("list", B)
+    
+    for (i in 1:B) {
+      samp_x <-   rmultinom(1, size = n_data, probs)
+      x_boot <- NULL
+      for (j in 1:length(probs)) {
+        x_boot <- c(x_boot, rep(cdf[[2]][j], samp_x[j]))
+        
+      }
+      boot_cdf <-
+        dpCDF(x_boot,
+              lower_bound,
+              upper_bound,
+              epsilon,
+              granularity,
+              cdp,
+              num_trials = 1)
+      
+      if (projection_step) {
+        boot_dist[[i]] <- isotone::gpava(boot_cdf[[1]][[2]], boot_cdf[[1]][[1]])$x
+      } else {
+        boot_dist[[i]] <- boot_cdf[[1]][[1]]
+      }
+      
+    }
+    
+    return(boot_dist)
+  }
+
+
+# minimize F(X) >= q
+
+get_quantile <- function(cdf, q, cdf_x = NULL, cdf_y = NULL) {
+  
+  if(is.null(cdf_x) & is.null(cdf_y)){
+    cdf_x <- cdf[[2]]
+    cdf_y <- cdf[[1]]
+  }
+  
+  min(cdf_x[cdf_y >= q])
+}
+
+summarize_results <- function(res_list, true_value = 0, n = 1000, dataset = "Mixture of Normals") {
+  ci_coverage <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x)), function(x)
+        mean(x[, 1] <= true_value & x[, 2] >= true_value))
+  
+  plot(
+    ci_coverage,
+    xaxt = "n",
+    bty = "n",
+    las = 1,
+    ylab = "CI Coverage",
+    xlab = "Epsilon",
+    main = paste0("Coverage of CIs\n", dataset, " n = ", n),
+    pch = 19,
+    ylim = c(0.5, 1)
+  )
+  axis(1, at = 1:length(ci_coverage), labels = names(ci_coverage))
+  abline(h = 0.95, lty = "dashed")
+  legend("bottomleft", legend = c("Nominal Coverage", "Empirical Coverage"), pch = c(NA, 19), lty = c("dashed", NA), bty = "n")
+  
+  ci_len <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x)), function(x)
+        mean(apply(x, 1, diff)))
+  
+  plot(
+    ci_len,
+    xaxt = "n",
+    bty = "n",
+    las = 1,
+    ylab = "CI Length",
+    xlab = "Epsilon",
+    main = paste0("Length of CIs\n", dataset, "; N = ", n),
+    pch = 19
+  )
+  axis(1, at = 1:length(ci_len), labels = names(ci_len))
+  
+}
+
+dp_ci <-
+  function(data,
+           B = 1000,
+           quantile_of_interest = 0.5,
+           alpha = 0.05,
+           lower_bound = -4,
+           upper_bound = 4,
+           epsilon = 0.1,
+           granularity = 0.01,
+           cdp = TRUE,
+           projection_step = TRUE) {
+    n_data <- length(data)
+    # Generate dp cdf
+    private_cdf <-
+      dpCDF(
+        data,
+        lower_bound,
+        upper_bound,
+        epsilon = epsilon,
+        granularity = granularity,
+        cdp = cdp,
+        num_trials = 1
+      )
+    
+    if (projection_step) {
+      pava <- isotone::gpava(private_cdf[[1]][[2]], private_cdf[[1]][[1]])
+      private_cdf[[1]][[1]] <- pava$x
+    }
+    
+    boot_dist <-
+      cdf_bootstrap(
+        cdf = private_cdf[[1]],
+        n_data = n_data,
+        B = B,
+        lower_bound = lower_bound,
+        upper_bound = upper_bound,
+        epsilon = epsilon,
+        granularity = granularity,
+        cdp = cdp,
+        projection_step = projection_step
+      )
+    
+    
+    ci <- quantile(sapply(boot_dist, function(x)
+      get_quantile(
+        q = quantile_of_interest,
+        cdf_x = private_cdf[[1]][[2]],
+        cdf_y = x
+      )),
+      c(alpha / 2, 1 - alpha / 2))
+    
+    return(ci)
+  }
+
+
+draw_sample <- function(P, n = 1000){
+  if(is.function(P)) {
+    P(n)
+  }
+  else if(is.numeric(P)) {
+    sample(P, n)
+  } else {
+    stop("P needs to be either a function (e.g. to sample from an analytical distribution) or a numeric vector")
+  }
+}
