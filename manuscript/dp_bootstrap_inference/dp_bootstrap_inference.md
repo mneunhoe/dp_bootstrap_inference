@@ -55,39 +55,13 @@ Furthermore, we show results on real data and use the adult data set from the UC
 Figure \ref{fig:fig1} summarizes the data sets. From each of the data sets we draw samples $\hat P$ of different sizes (50, 100, 500, 1000, 5000), to understand the behavior of our method at different sample sizes.
 
 
-```{r fig1, fig.cap = "Summary of the data sets", echo = FALSE, results='hide'}
-source("../../code/06_cdf_functions.R")
-par(mfrow = c(3, 1))
-curve(dnorm(x), -4, 4, las = 1, bty = "n", main = "Normal Distribution", ylab = "Density")
-curve(dmixnorm(x), -4, 4, las = 1, bty = "n", main = "Mixture Distribution", ylab = "Density")
-adult <-
-  read.csv(
-    "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
-    header = FALSE
-  )
-adult_age_full <- adult[, 1]
-plot(density(adult_age_full, from = 18, to = 99), las = 1, bty = "n", main = "Adult Data: Age", ylab = "Density", xlab = "age")
-
-```
+![Summary of the data sets](figure/fig1-1.png)
 
 
 (Further potential real data sets: Census (ACS and/or decennial)) PUMS data from IPUMS, Census business data)
 
-*Parameters.* In our algorithm we have several parameters that influence the results.
-
-* Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (1000, increase for a couple of settings).
-
-* Data range and grid: The lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
+*Parameters.* In our algorithm we have several parameters that influence the results. Most importantly we vary the privacy budget $\epsilon$ (0.1, 1, 10, Inf) and the number of bootstrap iterations $B$ (1000, increase for a couple of settings). Furthermore the lower and upper bound of the cdf algorithm as well as the granularity parameter play an important role and poorly set may bias results. For the known data generating processes (normal, mixture) we set the lower bound to $-4$ and the upper bound to $4$ and the granularity parameter to $0.01$. 
 For the adult data we set the lower bound to $18$ and the upper bound to $99$ with a granularity of $0.1$. (Other sets, how to choose them?)
-
-
-    * Future versions: allow a user-set range and discretization grd.
-
-    * Think about how to make discretization evident to user
-
-    * Check that code handles data ponts outside the range properly. 
-    
-    * Non-parametric vs parametric bootstrap
 
 *Evaluation.* To understand the performance of our method we repeatedly (100 times) apply the method to fresh samples $\hat P$ from the population data $P$. For each sample $\hat P$ we produce confidence intervals and calculate the proportion of confidence intervals that cover the true population value (empirical coverage). Furthermore, we are interested in the length of the confidence intervals (shorter intervals with coverage close to the nominal coverage are better).
 
@@ -103,62 +77,13 @@ In the case of samples from the known data generating process we can compare the
 
 (Combinations of parameters, other methods to get CIs, explain that pivot doesn't work in some cases and show it. True value from discretized data.)
 
-```{r echo = FALSE, results='hide'}
-source("../../code/06_cdf_functions.R")
-par(mfrow = c( 1, 2))
-
-Ps <- list(
-  "mixture" = list(
-    P = function(n) {
-      rmixnorm(
-        n,
-        weights = c(0.5, 0.5),
-        component_means = c(-2, 2),
-        component_sds = c(0.5, 0.5)
-      )
-    },
-    settings = c(-4, 4, 0.01),
-    true_value = 0
-  ),
-  "normal" = list(
-    P = rnorm,
-    settings = c(-4, 4, 0.01),
-    true_value = 0
-  ),
-  "adult" = list(
-    P = adult_age_full,
-    settings = c(18, 99, 0.1),
-    true_value = median(adult_age_full)
-  )
-)
 
 
-res_P <- readRDS("../../results/median_experiments.RDS")
-```
+![Results for the normal distribution](figure/fig2-1.png)
 
-```{r fig2, fig.cap = "Results for the normal distribution", echo = FALSE, results='hide'}
-par(mfrow = c(1, 2))
-summarize_results(res_P[["normal"]], dataset = "normal", true_value = Ps[["normal"]]$true_value)
+![Results for the mixture distribution](figure/fig3-1.png)
 
-
-
-```
-
-```{r fig3, fig.cap = "Results for the mixture distribution", echo = FALSE, results='hide'}
-par(mfrow = c(1, 2))
-summarize_results(res_P[["mixture"]], dataset = "mixture", true_value = Ps[["mixture"]]$true_value)
-
-
-
-```
-
-```{r fig4, fig.cap = "Results for the adult data", echo = FALSE, results='hide'}
-par(mfrow = c(1, 2))
-summarize_results(res_P[["adult"]], dataset = "adult", true_value = Ps[["adult"]]$true_value)
-
-
-
-```
+![Results for the adult data](figure/fig4-1.png)
 
 
 # Notes
@@ -242,9 +167,12 @@ See Figure \ref{fig:fig1}. Here is how you add footnotes. [^Sample of the first 
 
 But you can also do that using R.
 
-```{r fig5, fig.cap = "Another sample figure"}
+
+```r
 plot(mtcars$mpg)
 ```
+
+![Another sample figure](figure/fig5-1.png)
 
 You can use **bookdown** to allow references for Tables and Figures.
 
@@ -274,9 +202,23 @@ See awesome Table~\ref{tab:table} which is written directly in LaTeX in source R
 
 You can also use R code for that.
 
-```{r}
+
+```r
 knitr::kable(head(mtcars), caption = "Head of mtcars table")
 ```
+
+
+
+Table: Head of mtcars table
+
+|                  |  mpg| cyl| disp|  hp| drat|    wt|  qsec| vs| am| gear| carb|
+|:-----------------|----:|---:|----:|---:|----:|-----:|-----:|--:|--:|----:|----:|
+|Mazda RX4         | 21.0|   6|  160| 110| 3.90| 2.620| 16.46|  0|  1|    4|    4|
+|Mazda RX4 Wag     | 21.0|   6|  160| 110| 3.90| 2.875| 17.02|  0|  1|    4|    4|
+|Datsun 710        | 22.8|   4|  108|  93| 3.85| 2.320| 18.61|  1|  1|    4|    1|
+|Hornet 4 Drive    | 21.4|   6|  258| 110| 3.08| 3.215| 19.44|  1|  0|    3|    1|
+|Hornet Sportabout | 18.7|   8|  360| 175| 3.15| 3.440| 17.02|  0|  0|    3|    2|
+|Valiant           | 18.1|   6|  225| 105| 2.76| 3.460| 20.22|  1|  0|    3|    1|
 
 
 ## Lists
