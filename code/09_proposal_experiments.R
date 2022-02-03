@@ -155,7 +155,7 @@ saveRDS(res_P, "../results/median_experiments.RDS")
 par(mfrow = c(1, 2))
 lapply(names(Ps), function(x) summarize_results(res_P[[x]], dataset = x, true_value = Ps[[x]]$true_value) )
 
-
+res_P[["adult"]][["Inf"]][[1]]
 
 ### Get mean
 
