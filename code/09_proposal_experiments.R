@@ -35,13 +35,13 @@ Ps <- list(
   ),
   "adult" = list(
     P = adult_age_full,
-    settings = c(18, 99, 0.1),
+    settings = c(18, 99, 0.05),
     true_value = median(adult_age_full)
   )
 )
 
 
-n_rep <- 1
+n_rep <- 100
 res_P <- vector("list", length(Ps))
 names(res_P) <- names(Ps)
 
@@ -148,9 +148,9 @@ for (dataset in names(Ps)) {
   res_P[[paste0(dataset)]] <- res_list
 }
 
-#saveRDS(res_P, "../results/median_experiments.RDS")
+saveRDS(res_P, "../results/median_experiments.RDS")
 
-res_P <- readRDS("../results/median_experiments.RDS")
+#res_P <- readRDS("../results/median_experiments.RDS")
 
 par(mfrow = c(1, 2))
 lapply(names(Ps), function(x) summarize_results(res_P[[x]], dataset = x, true_value = Ps[[x]]$true_value) )
