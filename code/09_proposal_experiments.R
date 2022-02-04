@@ -52,6 +52,8 @@ n_data <- 1000
 
 alpha <- 0.05
 projection_step <- TRUE
+boot <- F
+
 for (dataset in names(Ps)) {
   res_list <- vector("list", length(epsilons))
   names(res_list) <- paste0(epsilons)
@@ -60,6 +62,20 @@ for (dataset in names(Ps)) {
     ci_list <- vector("list", n_rep)
     pivot_ci_list <- vector("list", n_rep)
     percentile_ci_list <- vector("list", n_rep)
+    
+    median_ci_list <- vector("list", n_rep)
+    
+    pp_cdf <-
+      preProcessCDF(
+        n = n_data,
+        lower_bound = Ps[[dataset]]$settings[1],
+        upper_bound = Ps[[dataset]]$settings[2],
+        granularity = Ps[[dataset]]$settings[3],
+        epsilon = epsilon ,
+        alpha = alpha,
+        cdp = TRUE,
+        variances = NULL
+      )
     
     for (i in 1:n_rep) {
       P_hat <- draw_sample(Ps[[dataset]]$P, n = n_data)
@@ -76,6 +92,16 @@ for (dataset in names(Ps)) {
           num_trials = 1
         )
       
+      # DP Median CI based on CDF
+      median_ci_list[[i]] <-
+        cdfFancyPostProcess(
+          vals = private_cdf[[1]][[2]],
+          cdf = private_cdf[[1]][[1]],
+          a_list_lower = pp_cdf[[1]],
+          a_list_upper = pp_cdf[[2]]
+        )
+      
+      if(boot){
       if (projection_step) {
         pava <- isotone::gpava(private_cdf[[1]][[2]], private_cdf[[1]][[1]])
         private_cdf[[1]][[1]] <- pava$x
@@ -131,7 +157,7 @@ for (dataset in names(Ps)) {
       
       pivot_ci_list[[i]] <- pivot_ci
       percentile_ci_list[[i]] <- percentile_ci
-      
+      }
       
       # ci_list[[i]] <- dp_ci(
       #   P_hat,
@@ -143,14 +169,20 @@ for (dataset in names(Ps)) {
       # )
       cat(i, "\n")
     }
-    res_list[[paste0(epsilon)]] <- list(pivot_ci_list, percentile_ci_list)
+    if(boot){
+    res_list[[paste0(epsilon)]] <- list(pivot_ci_list, percentile_ci_list, median_ci_list)
+    } else {
+      res_list[[paste0(epsilon)]] <- list(median_ci_list)
+    }
   }
   res_P[[paste0(dataset)]] <- res_list
 }
 
-saveRDS(res_P, "../results/median_experiments.RDS")
+# saveRDS(res_P, "../results/median_experiments_exact.RDS")
+# saveRDS(res_P, "../results/median_experiments_cdf.RDS")
+# res_P_cdf <- res_P
 
-#res_P <- readRDS("../results/median_experiments.RDS")
+res_P_boot <- readRDS("../results/median_experiments.RDS")
 
 par(mfrow = c(1, 2))
 lapply(names(Ps), function(x) summarize_results(res_P[[x]], dataset = x, true_value = Ps[[x]]$true_value) )

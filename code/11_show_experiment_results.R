@@ -1,0 +1,201 @@
+source("06_cdf_functions.R")
+library(isotone)
+
+
+
+adult <-
+  read.csv(
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
+    header = FALSE
+  )
+adult_age_full <- adult[, 1]
+
+Ps <- list(
+  "mixture" = list(
+    P = function(n) {
+      rmixnorm(
+        n,
+        weights = c(0.5, 0.5),
+        component_means = c(-2, 2),
+        component_sds = c(0.5, 0.5)
+      )
+    },
+    settings = c(-4, 4, 0.01),
+    true_value = 0
+  ),
+  "normal" = list(
+    P = rnorm,
+    settings = c(-4, 4, 0.01),
+    true_value = 0
+  ),
+  "lognormal" = list(
+    P = rlnorm,
+    settings = c(0, 15, 0.01),
+    true_value = 1
+  ),
+  "adult" = list(
+    P = adult_age_full,
+    settings = c(18, 99, 0.05),
+    true_value = median(adult_age_full)
+  )
+)
+
+# Exact non private CIs
+res_P <- readRDS("../results/median_experiments_exact.RDS")
+
+# Bootstrap results
+res_P_boot <- readRDS("../results/median_experiments.RDS")
+
+# CDFPostProcess results
+res_P_cdf <- readRDS("../results/median_experiments_cdf.RDS")
+
+for(dataset in names(Ps)){
+  true_value <- Ps[[dataset]]$true_value
+  
+  ci_proportion <- function(x, n, alpha) {
+    
+    z <- qnorm(c(alpha/2, 1-alpha/2))
+    
+    ci_list <- list()
+    for(res in 1:length(x)){
+      ci_list[[paste0(names(x)[res])]] <- x[res] + z*sqrt(x[res]*(1-x[res])/n)
+    }
+    return(ci_list)
+  }
+  
+  pdf(paste0("../figures/",dataset,"_coverage_plot.pdf"), width = 16, height = 9)
+  plot(
+    0,
+    0,
+    xlim = c(0.5, 4.5),
+    ylim = c(0, 1),
+    xlab = "Epsilon",
+    ylab = "Coverage",
+    las = 1,
+    xaxt = "n",
+    bty = "n",
+    main = paste0("Coverage of CIs\n", dataset)
+  )
+  
+  res_list <- res_P_boot[[dataset]]
+  
+  
+  ci_coverage <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x[[1]])), function(x)
+        mean(x[, 1] <= true_value & x[, 2] >= true_value))
+  
+  
+  ci_ci <- ci_proportion(ci_coverage, n = 100, 0.05)
+  
+  
+  axis(1, at = 1:4, labels = names(ci_coverage))
+  abline(v = c(1.5, 2.5, 3.5), col = "lightgrey")
+  abline(h = 0.95, lty = "dashed", col = viridis::viridis(5)[5])
+  
+  points(seq(0.75, 3.75), ci_coverage, pch = 19, col = viridis::viridis(5)[1])
+  lapply(1:4, function(x) segments(x0 = seq(0.75, 3.75)[x], y0 = ci_ci[[x]][1], y1 = ci_ci[[x]][2], col = viridis::viridis(5)[1]) )
+  
+  ci_coverage <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x[[2]])), function(x)
+        mean(x[, 1] <= true_value & x[, 2] >= true_value))
+  ci_ci <- ci_proportion(ci_coverage, n = 100, 0.05)
+  points(seq(1, 4), ci_coverage, pch = 19, col = viridis::viridis(5)[2])
+  lapply(1:4, function(x) segments(x0 = seq(1, 4)[x], y0 = ci_ci[[x]][1], y1 = ci_ci[[x]][2], col = viridis::viridis(5)[2]) )
+  
+  res_list <- res_P_cdf[[dataset]]
+  ci_coverage <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x[[1]])), function(x)
+        mean(x[, 1] <= true_value & x[, 2] >= true_value))
+  
+  
+  ci_ci <- ci_proportion(ci_coverage, n = 100, 0.05)
+  points(seq(1.25, 4.25), ci_coverage, pch = 19, col = viridis::viridis(5)[3])
+  lapply(1:4, function(x) segments(x0 = seq(1.25, 4.25)[x], y0 = ci_ci[[x]][1], y1 = ci_ci[[x]][2], col = viridis::viridis(5)[3]) )
+  
+  res_list <- res_P[[dataset]]
+  ci_coverage <-
+    sapply(lapply(res_list, function(x)
+      do.call("rbind", x[[1]])), function(x)
+        mean(x[, 1] <= true_value & x[, 2] >= true_value))
+  
+  ci_ci <- ci_proportion(ci_coverage, n = 100, 0.05)
+  points(4.5, ci_coverage, pch = 19, col = viridis::viridis(5)[4])
+  
+  segments(x0 = 4.5, y0 = ci_ci[[1]][1], y1 = ci_ci[[1]][2], col = viridis::viridis(5)[4] )
+  
+  legend(
+    "bottomright",
+    legend = c("Boot Pivot", "Boot Percentile", "CDFPostProcess", "Exact"),
+    pch = rep(19, 4),
+    col = viridis::viridis(5)[1:4],
+    bty = "n"
+  )
+  dev.off()
+}
+
+for(dataset in names(Ps)){
+  
+  
+  pdf(paste0("../figures/",dataset,"_length_plot.pdf"), width = 16, height = 9)
+  
+  y_max <- c(mixture = 2, normal = 5.5, lognormal = 8, adult = 6)
+  
+  plot(
+    0,
+    0,
+    xlim = c(0.5, 4.5),
+    ylim = c(0.8, y_max[dataset]),
+    xlab = "Epsilon",
+    ylab = "Relative Length",
+    las = 1,
+    xaxt = "n",
+    bty = "n",
+    main = paste0("Relative Length of CIs\n", dataset)
+  )
+  
+  res_list <- res_P_boot[[dataset]]
+  
+  
+  ci_length <- sapply(lapply(res_list, function(x)
+    do.call("rbind", x[[1]])), function(x)
+      mean(apply(x, 1, diff)))/sapply(lapply(res_P[[dataset]], function(x)
+        do.call("rbind", x[[1]])), function(x)
+          mean(apply(x, 1, diff)))
+  
+  
+  axis(1, at = 1:4, labels = names(ci_length))
+  abline(v = c(1.5, 2.5, 3.5), col = "lightgrey")
+  abline(h = 1, lty = "dashed", col = viridis::viridis(5)[5])
+  
+  points(seq(0.75, 3.75), ci_length, pch = 19, col = viridis::viridis(5)[1])
+  
+  ci_length <- sapply(lapply(res_list, function(x)
+    do.call("rbind", x[[2]])), function(x)
+      mean(apply(x, 1, diff)))/sapply(lapply(res_P[[dataset]], function(x)
+        do.call("rbind", x[[1]])), function(x)
+          mean(apply(x, 1, diff)))
+  
+  
+  points(seq(1, 4), ci_length, pch = 19, col = viridis::viridis(5)[2])
+  
+  res_list <- res_P_cdf[[dataset]]
+  ci_length <- sapply(lapply(res_list, function(x)
+    do.call("rbind", x[[1]])), function(x)
+      mean(apply(x, 1, diff)))/sapply(lapply(res_P[[dataset]], function(x)
+        do.call("rbind", x[[1]])), function(x)
+          mean(apply(x, 1, diff)))
+  
+  
+  points(seq(1.25, 4.25), ci_length, pch = 19, col = viridis::viridis(5)[3])
+  legend(
+    "topright",
+    legend = c("Boot Pivot", "Boot Percentile", "CDFPostProcess"),
+    pch = rep(19, 3),
+    col = viridis::viridis(5)[1:3],
+    bty = "n"
+  )
+  dev.off()
+}
